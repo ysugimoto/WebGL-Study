@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+    </head>
+    <body>
+        <script id="fragmentShader" type="x-shader/x-fragment">
+        #ifdef GL_ES
+        precision highp float;
+        #endif
+
+        varying vec4 vColor;
+
+        void main(void) {
+            gl_FragColor = vColor;
+        }
+        </script>
+        <script id="vertexShader" type="x-shader/x-vertex">
+        attribute vec3 aVertexPosition;
+        attribute vec4 aVertexColor;
+
+        uniform mat4 uMVMatrix;
+        uniform mat4 uPMatrix;
+
+        varying vec4 vColor;
+
+        void main(void) {
+            gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+            vColor = aVertexColor;
+        }
+        </script>
+        <canvas id="glCanvas" width="600" height="400"></canvas>
+        <!--<script src="bower_components/gl-matrix/dist/gl-matrix-min.js"></script>-->
+        <script src="js/glMatrix-0.9.5.min.js"></script>
+        <script src="js/webglcontext.js"></script>
+        <script src="js/webglshader.js"></script>
+        <script src="js/webglbuffer.js"></script>
+        <script src="js/webglmatrix.js"></script>
+        <script>
+            var c        = document.getElementById('glCanvas');
+            var ctx      = WebGLContext.create(c);
+            var gl       = ctx.get();
+            var fragment = ctx.shader.find('#fragmentShader');
+            var vertex   = ctx.shader.find('#vertexShader');
+            var program  = ctx.shader.makeProgram(fragment, vertex);
+
+            // triangle
+            var tv = [
+                0.0,  1.0,  0.0,
+                -1.0, -1.0, 0.0,
+                1.0,  -1.0, 0.0
+            ];
+            var tc = [
+                1.0, 0.0, 0.0, 1.0,
+                0.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 1.0
+            ];
+
+            var trianglePosition = ctx.buffer.create(new Float32Array(tv));
+            var triangleColor    = ctx.buffer.create(new Float32Array(tc));
+
+            trianglePosition.itemSize = 3;
+            trianglePosition.numItems = 3;
+
+            triangleColor.itemSize = 4;
+            triangleColor.numItems = 3;
+
+
+            console.log(ctx, fragment, vertex, trianglePosition, triangleColor, program);
+
+            gl.clearColor(0.0, 0.0, 0.1, 0.1);
+            gl.enable(gl.DEPTH_TEST);
+
+            // draw
+            var angle           = 0;
+            var begin           = Date.now();
+            var moveMatrix      = mat4.create();
+            var moveMatrixStack = [];
+            var pMatrix         = mat4.create();
+
+            requestAnimationFrame(function loop() {
+                var vw = ctx.viewportWidth,
+                    vh = ctx.viewportHeight,
+                    mm = ctx.matrix;
+
+                
+                gl.viewport(0, 0, vw, vh);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+                // process matrix
+                mm.perspective(45, vw / vh, 0.1, 100.0);
+                mm.identity();
+                mm.translate([-1.5, 0.0, -7.0]);
+                mm.save();
+                mm.rotate(angle, [0, 1, 0]);
+
+                // draw position shader
+                gl.bindBuffer(gl.ARRAY_BUFFER, trianglePosition);
+                gl.vertexAttribPointer(program.vertexPositionAttribute, trianglePosition.itemSize, gl.FLOAT, false, 0, 0);
+
+                // draw color shader
+                gl.bindBuffer(gl.ARRAY_BUFFER, triangleColor);
+                gl.vertexAttribPointer(program.vertexColorAttribute, triangleColor.itemSize, gl.FLOAT, false, 0, 0);
+
+                // set matrix uniform
+                gl.uniformMatrix4fv(program.pMatrixUniform, false, mm.getPerspectiveMatrix());
+                gl.uniformMatrix4fv(program.mvMatrixUniform, false, mm.getMatrix());
+
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, trianglePosition.numItems);
+
+                mm.restore();
+
+                // update angle
+                var now = Date.now();
+                angle += ( 90 * (now - begin) ) / 1000.0;
+                begin = now;
+
+
+                requestAnimationFrame(loop);
+            });
+        </script>
+    </body>
+</html>

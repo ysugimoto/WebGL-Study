@@ -1,0 +1,17 @@
+{
+  "name": "WebGL-Study",
+  "version": "0.0.1",
+  "homepage": "https://github.com/ysugimoto/WebGL-Study",
+  "authors": [
+    "Yoshiaki Sugimoto <sugimoto_yoshiaki@cyberagent.co.jp>"
+  ],
+  "description": "WebGL sample",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
